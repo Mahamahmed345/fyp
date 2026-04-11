@@ -61,3 +61,15 @@ Content-Type: application/json
 ### Access Store1 Dashboard (Correct Role)
 GET http://localhost:3002/store4-dashboard
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjI2LCJlbWFpbCI6InN0b3JlMkB0ZXN0LmNvbSIsInJvbGUiOiJzdG9yZTQiLCJpYXQiOjE3NzU0OTQwOTAsImV4cCI6MTc3NTQ5NzY5MH0.3eUXTpgq1QmxdZGgtUSGE8VPqSKZjiUSfRU9VIhVPVg
+
+####give cleaned csv data according to store and product after calculating Net Price,fault_loss_sale and etcc tab1
+GET http://localhost:3002/StockData/inventory?store=WH-1&item=Book_1
+
+######audit summary tab3
+GET http://localhost:3002/api/audit-summary
+
+####anomalies
+GET http://localhost:3002/api/anomalies
+
+####audit report
+POST http://localhost:3002/api/audit-report

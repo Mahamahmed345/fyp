@@ -15,6 +15,9 @@ import sys
 # --------------------------
 # Payday Flag
 # --------------------------
+
+
+
 def is_payday(date):
     if isinstance(date, str):
         date = pd.to_datetime(date)

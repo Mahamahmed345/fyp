@@ -1,3 +1,4 @@
 node_modules/
 *.env
 ai/Enhanced_6Month_Stock_Data.csv
+ai/smartstock_cleaned.csv

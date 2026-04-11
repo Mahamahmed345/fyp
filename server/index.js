@@ -8,10 +8,11 @@ const fs = require('fs');
 const csv = require("csv-parser");
 const { spawn } = require("child_process");
 const path = require('path');
+const inventoryRoutes = require('./routes/inventoryRoutes');
 require('dotenv').config();
 const { verifyToken, authorizeRoles } = require('./middleware/authMiddleware');
 require('./backupScheduler');
-
+const auditRoutes = require("./routes/auditRoutes");
 const db = require('./db');
 const importExcelRoute = require('./routes/importExcelRoute');
 
@@ -50,6 +51,7 @@ if (!fs.existsSync(backupDir)) {
 }
 
 
+
 // ✅ Manual Backup Route
 app.get('/backup', (req, res) => {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -66,76 +68,9 @@ app.get('/backup', (req, res) => {
     res.json({ message: 'Backup successful', file: `backup-${timestamp}.sql` });
   });
 });
-app.get("/api/data", (req, res) => {
-    const filePath = path.join(__dirname, "../ai/Enhanced_6Month_Stock_Data.csv");
-
-    // Query params
-    let page = parseInt(req.query.page) || 1;
-    let limit = parseInt(req.query.limit) || 10;
-    const storeQuery = req.query.store?.toLowerCase().trim();
-    const itemQuery = req.query.item?.toLowerCase().trim();
-
-    if (page < 1) page = 1;
-    if (limit < 1 || limit > 5000) limit = 1000;
-
-    const startRow = (page - 1) * limit;
-    const endRow = startRow + limit;
-
-    let filteredRows = [];
-    let totalFilteredRows = 0;
-    let currentIndex = 0;
-
-    const stream = fs.createReadStream(filePath)
-        .pipe(csv())
-        .on("data", (row) => {
-
-            // Clean keys
-            const cleanedRow = {};
-            Object.keys(row).forEach(key => {
-                cleanedRow[key.toLowerCase().trim()] = row[key];
-            });
-
-            const storeValue = cleanedRow.store?.toLowerCase().trim();
-            const itemValue = cleanedRow.item?.toLowerCase().trim();
-
-            // Filter condition
-            if (
-                (!storeQuery || storeValue === storeQuery) &&
-                (!itemQuery || itemValue === itemQuery)
-            ) {
-                totalFilteredRows++;
-
-                if (currentIndex >= startRow && currentIndex < endRow) {
-                    filteredRows.push(cleanedRow);
-                }
-
-                currentIndex++;
-            }
-        })
-        .on("end", () => {
-
-            const totalPages = Math.ceil(totalFilteredRows / limit);
-
-            res.json({
-                page,
-                limit,
-                totalRows: totalFilteredRows,
-                totalPages,
-                data: filteredRows
-            });
-
-            console.log(`Sent page ${page} with ${filteredRows.length} rows`);
-        })
-        .on("error", (err) => {
-            console.error("Error reading CSV:", err);
-            res.status(500).json({ error: "Error reading CSV file" });
-        });
-});
 
 
 app.post("/api/predict", (req, res) => {
-    console.log('hellllllllloooooooo')
-    console.log("BODY:", req.body);
     const {store,item,stock,price}=req.body;
     
     const python = spawn("python", [
@@ -257,12 +192,15 @@ app.get('/protected', (req, res) => {
     res.send({ message: 'Protected content accessed!', userId: decoded.userId });
   });
 });
+
+app.use("/api", auditRoutes);
 const chatRoutes = require('./routes/chat');
 app.use('/chat', chatRoutes);
-
+app.use("/StockData", inventoryRoutes);
 app.use('/', importExcelRoute);
 
 server.listen(3002, () => {
+  
   console.log("🚀 Server + Socket.IO running on port 3002");
 });
 
