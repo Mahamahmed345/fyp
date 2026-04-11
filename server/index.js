@@ -134,9 +134,10 @@ app.get("/api/data", (req, res) => {
 
 
 app.post("/api/predict", (req, res) => {
-
-    const { store, item, stock, price } = req.body;
-
+    console.log('hellllllllloooooooo')
+    console.log("BODY:", req.body);
+    const {store,item,stock,price}=req.body;
+    
     const python = spawn("python", [
         "../ai/predict.py",
         store,

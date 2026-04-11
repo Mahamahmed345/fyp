@@ -49,6 +49,14 @@ Content-Type: application/json
   "LoginEmail": "store2@test.com",
   "LoginPassword": "123456"
 }
+##forecast prediction
+### Login Store1
+POST http://localhost:3002/api/predict
+Content-Type: application/json
+
+{"store":"WH-1","item":"Book_1","stock":50,"price":100.00}
+
+
 
 ### Access Store1 Dashboard (Correct Role)
 GET http://localhost:3002/store4-dashboard
