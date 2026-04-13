@@ -49,8 +49,7 @@ Content-Type: application/json
   "LoginEmail": "store2@test.com",
   "LoginPassword": "123456"
 }
-##forecast prediction
-### Login Store1
+###forecast prediction
 POST http://localhost:3002/api/predict
 Content-Type: application/json
 
@@ -58,7 +57,7 @@ Content-Type: application/json
 
 
 
-### Access Store1 Dashboard (Correct Role)
+### Access Store4 Dashboard (Correct Role)
 GET http://localhost:3002/store4-dashboard
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjI2LCJlbWFpbCI6InN0b3JlMkB0ZXN0LmNvbSIsInJvbGUiOiJzdG9yZTQiLCJpYXQiOjE3NzU0OTQwOTAsImV4cCI6MTc3NTQ5NzY5MH0.3eUXTpgq1QmxdZGgtUSGE8VPqSKZjiUSfRU9VIhVPVg
 
