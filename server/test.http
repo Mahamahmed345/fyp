@@ -65,7 +65,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjI2LCJlb
 GET http://localhost:3002/StockData/inventory?store=WH-1&item=Book_1
 
 ######audit summary tab3
-GET http://localhost:3002/api/audit-summary
+GET http://localhost:3002/api/audit-summary?warehouse=WH-1&category=Books
 
 ####anomalies
 GET http://localhost:3002/api/anomalies
