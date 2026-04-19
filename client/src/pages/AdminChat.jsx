@@ -86,7 +86,7 @@ export default function AdminChat() {
     <div
       style={{
         display: "flex",
-        height: "90vh",
+        height: "100%",
         fontFamily: "Arial, sans-serif",
         background: "#f3f4f6",
       }}

@@ -11,6 +11,7 @@ const Signup = () => {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('store1');
   const [successMessage, setSuccessMessage] = useState('');
 
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ const Signup = () => {
       Email: email,
       Name: name,
       Password: password,
-      role: 'store1'
+      role: role
     })
       .then(() => {
         setSuccessMessage('Account created successfully! Redirecting to login...');
@@ -91,6 +92,19 @@ const Signup = () => {
             onChange={(e) => setPassword(e.target.value)}
             className="w-full border rounded px-3 py-2 mb-4"
           />
+
+          <label className="text-sm font-bold mb-1 block">Account Role</label>
+          <select 
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            className="w-full border rounded px-3 py-2 mb-4 bg-white text-sm font-bold"
+          >
+            <option value="admin">Global Administrator</option>
+            <option value="store1">Store 1 Manager</option>
+            <option value="store2">Store 2 Manager</option>
+            <option value="store3">Store 3 Manager</option>
+            <option value="store4">Store 4 Manager</option>
+          </select>
 
           <label className="text-sm mb-4 block font-bold">
             <input type="checkbox" className="mr-2" />

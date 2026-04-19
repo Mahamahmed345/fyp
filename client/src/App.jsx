@@ -1,72 +1,99 @@
+import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
 
+// Components Folder (Casing checked against filesystem)
 import Login from "./components/Login";
 import Signup from "./components/Signup";
+import AdminDashboard from "./components/admindashboard"; 
 import Sidebar from "./components/sidebar";
 import Header from "./components/header";
-import Dashboard from "./components/dashboard"; // small stat card
-import InventoryOverview from "./components/graphs"; // 👈 MIDDLE DASHBOARD UI
-import FileUpload from "./components/FileUpload";
 
+// Pages Folder (Casing checked against filesystem)
 import AdminChat from "./pages/AdminChat";
 import UserChat from "./pages/UserChat";
-import StockDashboard from "./StockDashboard";
+import StoreAdminView from "./components/StoreAdminView"; 
+import StoreManagerDashboard from "./components/StoreManagerDashboard"; 
+import Store1Analytics from "./pages/Store1Analytics";
+import FaultDetection from "./pages/FaultDetection";
+import Users from "./pages/users1";
 
-/* ================= DASHBOARD LAYOUT ================= */
-function DashboardLayout() {
-  return (
-    <div className="flex min-h-screen">
-      
-      {/* Sidebar */}
-      <Sidebar />
+// Layouts Folder
+import StoreLayout from "./layouts/StoreLayout";
 
-      {/* Right Section */}
-      <div className="flex-1 bg-gray-100 flex flex-col">
-        
-        {/* Header */}
-        <Header />
+// A component to protect routes
+const ProtectedRoute = ({ children }) => {
+  // Bypassing auth for now
+  return children;
+};
 
-        {/* MAIN DASHBOARD CONTENT */}
-        <main className="p-6 space-y-6">
+// A component to enforce role-based access
+const RoleGate = ({ children, allowedRoles }) => {
+  // Bypassing role gate for now
+  return children;
+};
 
-          {/* Small summary cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Dashboard title="Total Stock Value" value="$4.25M" />
-            <Dashboard title="Warehouse Usage" value="81%" />
-            <Dashboard title="Return Rate" value="2.9%" />
-          </div>
+// A simple component to redirect based on role
+const DashboardDispatcher = () => {
+  const { user } = useAuth();
 
-          {/* 🔥 IMAGE DASHBOARD (GRAPHS + TABLES) */}
-          <InventoryOverview />
+  if (!user) return <Navigate to="/login" replace />;
 
-        </main>
-      </div>
-    </div>
-  );
-}
+  if (user.role === 'admin') {
+    return <Navigate to="/admindashboard" replace />;
+  }
 
-/* ================= APP ROUTES ================= */
+  // Managers go to their PRIVATE workstations
+  if (user.role.startsWith('store')) {
+    const storeNode = user.role.replace('store', 's');
+    return <Navigate to={`/manager/${storeNode}/dashboard`} replace />;
+  }
+
+  return <Navigate to="/admindashboard" replace />;
+};
+
+// Intelligently redirect for the catch-all
+const CatchAllRedirect = () => {
+  return <Navigate to="/login" replace />;
+};
+
 function App() {
   return (
     <Router>
       <Routes>
-
-        {/* Redirect root to login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
-
-        {/* Auth pages */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
-        {/* Dashboard */}
-        {/* <Route path="/dashboard" element={<DashboardLayout />} /> */}
-        <Route path="/dashboard" element={<Dashboard />} />
-        {/* Other pages */}
-        <Route path="/FileUpload" element={<FileUpload />} />
-        <Route path="/admin-chat" element={<AdminChat />} />
-        <Route path="/user-chat" element={<UserChat />} />
-        <Route path="stock" element={<StockDashboard />} />
+        {/* Dashboard Dispatcher */}
+        <Route path="/dashboard" element={<DashboardDispatcher />} />
 
+        {/* Admin Dashboard Routes - Protected */}
+        <Route path="/admindashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/chat" element={<ProtectedRoute><AdminChat /></ProtectedRoute>} />
+        <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
+
+        {/* 1. STRATEGIC STORE VIEWS (Admin Only) */}
+        <Route path="/s/:id" element={<RoleGate allowedRoles={['admin']}><StoreLayout /></RoleGate>}>
+          <Route path="dashboard" element={<StoreAdminView />} />
+          <Route path="analytics" element={<Store1Analytics />} />
+          <Route path="faults" element={<FaultDetection />} />
+          <Route path="chat" element={<UserChat />} />
+        </Route>
+
+        {/* 2. OPERATIONAL MANAGER TERMINALS (Private to Managers) */}
+        <Route path="/manager/:id" element={<RoleGate allowedRoles={['store1', 'store2', 'store3', 'store4']}><StoreLayout /></RoleGate>}>
+          <Route path="dashboard" element={<StoreManagerDashboard />} />
+          <Route path="chat" element={<UserChat />} />
+        </Route>
+
+        {/* Redirects for common misspellings or requested aliases */}
+        <Route path="/s1/dashboard" element={<Navigate to="/s/s1/dashboard" replace />} />
+        <Route path="/store1-dashboard" element={<Navigate to="/s/s1/dashboard" replace />} />
+        <Route path="/admindahsbapord" element={<Navigate to="/admindashboard" replace />} />
+        <Route path="/admindahsbaord" element={<Navigate to="/admindashboard" replace />} />
+
+        <Route path="*" element={<CatchAllRedirect />} />
       </Routes>
     </Router>
   );

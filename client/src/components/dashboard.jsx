@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import Store1Dashboard from "./Store1Dashboard";
-import Store2Dashboard from "./Store2Dashboard";
-import Store3Dashboard from "./Store3Dashboard";
-import Store4Dashboard from "./Store4Dashboard";
+import Store1Dashboard from "../pages/Store1Dashboard";
+import Store2Dashboard from "../pages/Store2Dashboard";
+import Store3Dashboard from "../pages/Store3Dashboard";
+import Store4Dashboard from "../pages/Store4Dashboard";
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const [message, setMessage] = useState("");

@@ -169,11 +169,22 @@ import Axios from 'axios';
 import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
-  const { login } = useAuth(); // ✅ use login() from context
+  const { login, user } = useAuth(); // ✅ Get user state
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const navigate = useNavigate();
+
+  // ✅ Remove auto-redirect (user must see login page first every time)
+  /*
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'admin') navigate('/admindashboard');
+      else if (user.role === 'store1') navigate('/s1/dashboard');
+      else navigate('/admindashboard');
+    }
+  }, [user, navigate]);
+  */
 
   const loginUser = async (e) => {
     e.preventDefault();
@@ -198,8 +209,16 @@ const Login = () => {
         setLoginPassword('');
         setLoginError('');
 
-        // Navigate to dashboard
-        navigate('/dashboard');
+        // ✅ Navigate based on role
+        if (data.user.role === 'admin') {
+          navigate('/admindashboard');
+        } else if (data.user.role.startsWith('store')) {
+          const storeId = data.user.role.replace('store', 's');
+          navigate(`/manager/${storeId}/dashboard`);
+        } else {
+          // Fallback
+          navigate('/admindashboard'); 
+        }
       } else {
         setLoginError(data.message || 'Invalid credentials');
       }
