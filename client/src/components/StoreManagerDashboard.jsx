@@ -58,7 +58,7 @@ const StoreManagerDashboard = () => {
     doc.setFontSize(22);
     doc.setTextColor(40);
     doc.text('CONFIDENTIAL: Local Performance Audit', 14, 22);
-    
+
     doc.setFontSize(10);
     doc.setTextColor(100);
     doc.text(`Store Identity: ${storeId}`, 14, 32);
@@ -127,9 +127,9 @@ const StoreManagerDashboard = () => {
     doc.setFontSize(8);
     doc.setTextColor(150);
     const pageCount = doc.internal.getNumberOfPages();
-    for(let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.text(`Page ${i} of ${pageCount} - Confidential Audit Data`, 105, 290, null, null, 'center');
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.text(`Page ${i} of ${pageCount} - Confidential Audit Data`, 105, 290, null, null, 'center');
     }
 
     doc.save(`${storeId}_Performance_Audit.pdf`);
@@ -178,20 +178,52 @@ const StoreManagerDashboard = () => {
 
   // Dynamic Task Queue
   const autoTasks = [];
+  // 1. URGENT: Shelf Replenishment (High Stockout Risk)
   categoricalData.forEach(item => {
     if (item.status === 'Critical') {
       autoTasks.push({
         title: `URGENT: Shelf Replenishment [${item.category}]`,
         priority: 'High',
-        msg: `Current stock (${item.stock}) below critical ${ALERT_THRESHOLD_DAYS}-day forecast (${item.demand7d}).`
+        msg: `Forecast identifies a critical stockout risk. Immediate replenishment of ${item.demand7d * 2} units required.`
       });
     }
   });
-  if (kpis.anomalyCount > 0) {
+
+  // 2. QA: Dead Stock Liquidation
+  if (faultBreakdown.deadStock > 0) {
     autoTasks.push({
-      title: 'QA ACTION: System Flagged Discrepancy',
+      title: 'QA ACTION: Inventory Liquidation',
       priority: 'Medium',
-      msg: `${kpis.anomalyCount} anomalies detected in current model run. Verification required.`
+      msg: `${faultBreakdown.deadStock} items identified as 'Dead Stock'. Initiate price markdown or warehouse transfer.`
+    });
+  }
+
+  // 3. QA: Pricing / Market Alignment
+  if (faultBreakdown.marketGap > 0) {
+    autoTasks.push({
+      title: 'QA ACTION: Market Price Alignment',
+      priority: 'Low',
+      msg: `${faultBreakdown.marketGap} items identified with pricing gaps. Synchronize local tags with model suggested prices.`
+    });
+  }
+
+  // 4. LOGISTICS: Inter-Store Transfer
+  if (data.transferSuggestions && data.transferSuggestions.length > 0) {
+    data.transferSuggestions.forEach(ts => {
+      autoTasks.push({
+        title: 'LOGISTICS: Tactical Requisition',
+        priority: ts.priority || 'Medium',
+        msg: ts.msg
+      });
+    });
+  }
+
+  // 5. CAPACITY: Warehouse Warning
+  if (parseFloat(shelfUtilization) > 90) {
+    autoTasks.push({
+      title: 'SYSTEM: Capacity Alert',
+      priority: 'Low',
+      msg: `Physical shelf utilization (${shelfUtilization}%) is approaching terminal limits. Clear dead stock to avoid intake bottlenecks.`
     });
   }
 
@@ -204,15 +236,15 @@ const StoreManagerDashboard = () => {
             <Gauge size={32} />
           </div>
           <div>
-            <h1 className="text-3xl font-black italic text-text-main uppercase tracking-tighter leading-none">{storeId} Operational Hub</h1>
-            <p className="text-text-muted text-[10px] font-black uppercase tracking-[0.3em] mt-2">Prophet Intelligence & Qualitative Audit</p>
+            <h1 className="text-3xl font-black italic text-text-main uppercase tracking-tighter leading-none">{storeId}</h1>
+            {/* <p className="text-text-muted text-[10px] font-black uppercase tracking-[0.3em] mt-2">Prophet Intelligence & Qualitative Audit</p> */}
           </div>
         </div>
 
         <div className="flex items-center gap-6">
           <div className="text-right">
-            <p className="text-[9px] font-black text-text-muted uppercase">Inventory Health Status</p>
-            <p className="text-sm font-black text-[#3b82f6] italic">{lastSync}</p>
+            {/* <p className="text-[9px] font-black text-text-muted uppercase">Inventory Health Status</p>
+            <p className="text-sm font-black text-[#3b82f6] italic">{lastSync}</p> */}
           </div>
           <button
             onClick={generateLocalReport}
@@ -230,7 +262,7 @@ const StoreManagerDashboard = () => {
             <DollarSign size={14} className="text-green-500" /> Revenue Potential
           </p>
           <p className="text-xl font-black text-text-main tracking-tighter">${revenuePotential.toLocaleString()}</p>
-          <span className="text-[10px] font-bold text-green-500 mt-2 block">+4.2% Growth Index</span>
+          <span className="text-[10px] font-bold text-green-500 mt-2 block italic tracking-widest">Strategic Asset Valuation</span>
         </div>
 
         <div className={`dashboard-card p-6 border-l-4 ${shelfUtilization > 90 ? 'border-red-500 bg-red-500/5' : 'border-[#3b82f6]'}`}>
@@ -246,7 +278,7 @@ const StoreManagerDashboard = () => {
             <AlertTriangle size={14} className="text-red-500" /> Critical Stockouts
           </p>
           <p className="text-xl font-black text-text-main tracking-tighter">{criticalStockouts}</p>
-          <span className="text-[9px] font-black text-red-500 uppercase mt-2 block tracking-widest">{ALERT_THRESHOLD_DAYS}-Day Cover Alert</span>
+          <span className="text-[9px] font-black text-red-500 uppercase mt-2 block tracking-widest font-black">Tactical Reorder Signal Required</span>
         </div>
 
         <div className="dashboard-card p-6 border-l-4 border-purple-500">
@@ -254,10 +286,10 @@ const StoreManagerDashboard = () => {
             <ShieldAlert size={14} className="text-purple-500" /> Fault Detection Audit
           </p>
           <div className="flex items-center justify-between mt-1">
-             <p className="text-xl font-black text-text-main tracking-tighter">{kpis.anomalyCount}</p>
-             <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase ${kpis.anomalyCount === 0 ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-                {kpis.anomalyCount === 0 ? 'System Clear' : 'Action Required'}
-             </span>
+            <p className="text-xl font-black text-text-main tracking-tighter">{kpis.anomalyCount}</p>
+            <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase ${kpis.anomalyCount === 0 ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+              {kpis.anomalyCount === 0 ? 'System Clear' : 'Action Required'}
+            </span>
           </div>
           <span className="text-[9px] font-black text-text-muted uppercase mt-2 block tracking-widest">Anomaly Detection v4.2</span>
         </div>
@@ -267,7 +299,7 @@ const StoreManagerDashboard = () => {
             <Zap size={14} className="text-amber-500" /> Predict. Performance
           </p>
           <p className="text-xl font-black text-text-main tracking-tighter">{kpis.forecastMarginMAE.replace('%', '')}%</p>
-          <span className="text-[9px] font-black text-text-muted uppercase mt-2 block tracking-widest">Service Level Reliability</span>
+          <span className="text-[9px] font-black text-text-muted uppercase mt-2 block tracking-widest">Model Confidence Interval</span>
         </div>
       </div>
 
@@ -278,7 +310,7 @@ const StoreManagerDashboard = () => {
             <h3 className="text-[11px] font-black uppercase text-text-main flex items-center gap-2 mb-8 tracking-widest italic font-black">
               <PieIcon size={18} className="text-red-500" /> Qualitative Fault Index
             </h3>
-            
+
             <div className="h-[280px] w-full">
               {pieData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
@@ -296,13 +328,13 @@ const StoreManagerDashboard = () => {
                         <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} stroke="none" />
                       ))}
                     </Pie>
-                    <Tooltip 
+                    <Tooltip
                       contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }}
                       itemStyle={{ color: '#fff', fontSize: '10px', textTransform: 'uppercase', fontWeight: '900' }}
                     />
-                    <Legend 
-                      verticalAlign="bottom" 
-                      height={36} 
+                    <Legend
+                      verticalAlign="bottom"
+                      height={36}
                       formatter={(value) => <span className="text-[9px] font-black uppercase text-text-muted tracking-tighter">{value}</span>}
                     />
                   </PieChart>
@@ -338,7 +370,7 @@ const StoreManagerDashboard = () => {
               {autoTasks.length === 0 && (
                 <div className="text-center py-8">
                   <CheckCircle2 size={32} className="text-green-500/20 mx-auto mb-2" />
-                  <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Operational Perfection Verified</p>
+                  <p className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em]">Terminal Status: Stable | Model-Driven Baselines Synchronized</p>
                 </div>
               )}
             </div>
@@ -356,12 +388,12 @@ const StoreManagerDashboard = () => {
                 <p className="text-[10px] font-bold text-text-muted uppercase tracking-[0.2em] mt-1">Statistical Analysis: Prophet Intelligence v2.0</p>
               </div>
               <div className="flex items-center gap-4">
-                  <div className="px-4 py-2 bg-[#3b82f6]/10 rounded-xl border border-[#3b82f6]/20 text-center">
-                    <span className="text-[8px] font-black text-text-muted uppercase block">Predicted Peak</span>
-                    <p className="text-xl font-black text-[#3b82f6] tracking-tighter italic">
-                      {Math.max(...forecastData.map(d => d.prediction), 0)} Units
-                    </p>
-                  </div>
+                <div className="px-4 py-2 bg-[#3b82f6]/10 rounded-xl border border-[#3b82f6]/20 text-center">
+                  <span className="text-[8px] font-black text-text-muted uppercase block">Predicted Peak</span>
+                  <p className="text-xl font-black text-[#3b82f6] tracking-tighter italic">
+                    {Math.max(...forecastData.map(d => d.prediction), 0)} Units
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -370,26 +402,26 @@ const StoreManagerDashboard = () => {
                 <AreaChart data={forecastData}>
                   <defs>
                     <linearGradient id="colorDemand" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                  <XAxis 
-                    dataKey="category" 
-                    stroke="#64748b" 
-                    fontSize={11} 
-                    axisLine={false} 
-                    tickLine={false} 
+                  <XAxis
+                    dataKey="category"
+                    stroke="#64748b"
+                    fontSize={11}
+                    axisLine={false}
+                    tickLine={false}
                     fontFamily="inherit"
                     fontWeight={900}
                     tickFormatter={(val) => val.toUpperCase()}
                   />
-                  <YAxis 
-                    stroke="#64748b" 
-                    fontSize={10} 
-                    axisLine={false} 
-                    tickLine={false} 
+                  <YAxis
+                    stroke="#64748b"
+                    fontSize={10}
+                    axisLine={false}
+                    tickLine={false}
                     label={{ value: 'PROPHET FORECAST (UNITS)', angle: -90, position: 'insideLeft', fontSize: 10, fill: '#64748b', fontWeight: '900' }}
                   />
                   <Tooltip
@@ -397,30 +429,34 @@ const StoreManagerDashboard = () => {
                     itemStyle={{ color: '#fff', fontSize: '11px', fontWeight: 'bold' }}
                     labelStyle={{ color: '#3b82f6', fontWeight: 'black', marginBottom: '4px' }}
                   />
-                  <Area 
-                    type="monotone" 
-                    dataKey="prediction" 
-                    stroke="#3b82f6" 
-                    strokeWidth={4} 
-                    fillOpacity={1} 
-                    fill="url(#colorDemand)" 
+                  <Area
+                    type="monotone"
+                    dataKey="prediction"
+                    stroke="#3b82f6"
+                    strokeWidth={4}
+                    fillOpacity={1}
+                    fill="url(#colorDemand)"
                   />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
 
             <div className="mt-8 p-6 bg-black/20 rounded-2xl border border-white/5 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <Activity size={20} className="text-[#3b82f6] animate-pulse" />
-                    <div>
-                        <p className="text-[10px] font-black uppercase text-text-main tracking-widest">Model Precision Check</p>
-                        <p className="text-[11px] text-text-muted font-bold mt-1">Predictive analysis is leveraging categorical regression to identify upcoming inventory velocity surges.</p>
-                    </div>
+              <div className="flex items-center gap-4">
+                <Activity size={20} className="text-[#3b82f6] animate-pulse" />
+                <div>
+                  <p className="text-[10px] font-black uppercase text-text-main tracking-widest">Model Integrity Scan</p>
+                  <p className="text-[11px] text-text-muted font-bold mt-1 leading-relaxed">
+                    Prophet Intelligence is currently monitoring <span className="text-[#3b82f6]">{categoricalData.length}</span> categories to detect demand deviations at <span className="text-[#3b82f6] truncate">{storeId}</span>.
+                  </p>
                 </div>
-                <div className="text-right">
-                    <p className="text-[9px] font-black text-text-muted uppercase tracking-widest">Model Confidence</p>
-                    <p className="text-lg font-black text-green-500 italic">94.8%</p>
-                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-[9px] font-black text-text-muted uppercase tracking-widest">Model Confidence</p>
+                <p className="text-lg font-black text-green-500 italic">
+                  {(100 - parseFloat(kpis.forecastMarginMAE)).toFixed(1)}%
+                </p>
+              </div>
             </div>
           </section>
         </div>
@@ -465,9 +501,9 @@ const StoreManagerDashboard = () => {
                       <div className="flex flex-col items-center">
                         <span className={`text-xs font-black italic ${parseFloat(doc) < ALERT_THRESHOLD_DAYS ? 'text-red-500' : 'text-text-main'}`}>{doc} Days</span>
                         <div className="w-16 h-1 bg-white/5 rounded-full mt-1 overflow-hidden">
-                          <div 
-                            className={`h-full ${parseFloat(doc) < ALERT_THRESHOLD_DAYS ? 'bg-red-500' : 'bg-[#00ff88]'}`} 
-                            style={{ width: `${Math.min(100, parseFloat(doc) * 10)}%` }} 
+                          <div
+                            className={`h-full ${parseFloat(doc) < ALERT_THRESHOLD_DAYS ? 'bg-red-500' : 'bg-[#00ff88]'}`}
+                            style={{ width: `${Math.min(100, parseFloat(doc) * 10)}%` }}
                           />
                         </div>
                       </div>
@@ -478,15 +514,14 @@ const StoreManagerDashboard = () => {
                       </div>
                     </td>
                     <td className="py-6 px-4 text-right">
-                      <button 
+                      <button
                         disabled={item.status === 'Healthy'}
-                        className={`flex items-center gap-2 ml-auto px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                          item.status === 'Healthy' 
-                            ? 'bg-white/5 text-text-muted cursor-not-allowed opacity-30' 
-                            : 'bg-[#00ff88] text-black hover:scale-105 active:scale-95 shadow-lg shadow-[#00ff88]/20'
-                        }`}
+                        className={`flex items-center gap-2 ml-auto px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${item.status === 'Healthy'
+                          ? 'bg-white/5 text-text-muted cursor-not-allowed opacity-30'
+                          : 'bg-[#00ff88] text-black hover:scale-105 active:scale-95 shadow-lg shadow-[#00ff88]/20'
+                          }`}
                       >
-                         Order Now <Package size={14} />
+                        Order Now <Package size={14} />
                       </button>
                     </td>
                   </tr>
